@@ -1,0 +1,94 @@
+# Dockerfile for Mininet Network Emulation
+# Use Ubuntu 18.04 for better Mininet compatibility
+FROM ubuntu:18.04
+
+# Avoid interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies including lsb-release
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-dev \
+    git \
+    curl \
+    build-essential \
+    net-tools \
+    iputils-ping \
+    netcat \
+    openvswitch-switch \
+    openvswitch-common \
+    tshark \
+    iptables \
+    iproute2 \
+    sudo \
+    lsb-release \
+    ca-certificates \
+    libjpeg-dev \
+    zlib1g-dev \
+    libpng-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Mininet from Ubuntu package
+# Note: Ubuntu 18.04 has mininet in repositories
+RUN apt-get update && apt-get install -y mininet && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY requirements.txt /app/requirements.txt
+
+# Install Python dependencies
+# Note: Install mininet via pip for Python module access
+RUN pip3 install --no-cache-dir \
+    mininet \
+    networkx \
+    numpy \
+    pandas \
+    matplotlib \
+    seaborn \
+    pyyaml
+
+# Copy project files
+COPY topology/ /app/topology/
+COPY orchestrator/ /app/orchestrator/
+COPY visualization/ /app/visualization/
+COPY experiments/ /app/experiments/
+
+# Set matplotlib backend for headless operation
+ENV MPLBACKEND=Agg
+
+# Create results directory
+RUN mkdir -p /app/results /app/plots
+
+# Expose ports
+EXPOSE 6633 8080
+
+# Run as privileged (required for Mininet)
+# Note: This should be specified in docker-compose, not here
+
+# Create startup script to initialize Open vSwitch
+RUN echo '#!/bin/bash\n\
+# Start Open vSwitch\n\
+service openvswitch-switch start || true\n\
+# Create ovs database if needed\n\
+mkdir -p /var/run/openvswitch\n\
+# Start ovsdb-server\n\
+ovsdb-server --remote=punix:/var/run/openvswitch/db.sock --remote=db:Open_vSwitch,Open_vSwitch,manager_options --private-key=db:Open_vSwitch,SSL,private_key --certificate=db:Open_vSwitch,SSL,certificate --bootstrap-ca-cert=db:Open_vSwitch,SSL,ca_cert --pidfile --detach --log-file\n\
+# Wait for database\n\
+sleep 2\n\
+# Initialize database if needed\n\
+ovs-vsctl --no-wait init\n\
+# Start vswitchd\n\
+ovs-vswitchd --pidfile --detach --log-file\n\
+# Execute main command\n\
+exec "$@"\n\
+' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+
+# Use entrypoint to start OVS
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+# Default command
+CMD ["python3", "orchestrator/orchestrator.py", "--slots", "10", "--duration", "60"]
+

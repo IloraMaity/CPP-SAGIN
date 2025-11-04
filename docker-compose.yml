@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # Ryu SDN Controller Service
+  ryu-controller:
+    build:
+      context: .
+      dockerfile: Dockerfile.ryu
+    image: comosat-ryu:latest
+    container_name: comosat-ryu
+    hostname: ryu-controller
+    ports:
+      - "6633:6633"   # OpenFlow
+      - "8080:8080"   # REST API (optional)
+    volumes:
+      - ./topology:/app/topology:ro
+      - ./controller:/app/controller:ro
+    networks:
+      - sagin-network
+    environment:
+      - RYU_HOST=0.0.0.0
+      - RYU_PORT=6633
+    command: ryu-manager --verbose --ofp-listen-host 0.0.0.0 controller/comosat_controller.py
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "6633"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Mininet Network Emulation Service
+  mininet:
+    build:
+      context: .
+      dockerfile: Dockerfile.mininet
+    image: comosat-mininet:latest
+    container_name: comosat-mininet
+    hostname: mininet-host
+    depends_on:
+      - ryu-controller
+    volumes:
+      - ./topology:/app/topology:ro
+      - ./orchestrator:/app/orchestrator:ro
+      - ./visualization:/app/visualization:ro
+      - ./experiments:/app/experiments:ro
+      - ./results:/app/results
+      - ./plots:/app/plots
+      - ../../:/app/matlab_data:ro  # Mount MATLAB metrics if available
+    networks:
+      - sagin-network
+    privileged: true  # Required for Mininet
+    environment:
+      - RYU_CONTROLLER=ryu-controller
+      - RYU_PORT=6633
+    command: python3 orchestrator/orchestrator.py --slots 25 --duration 60 --remote-controller-ip ryu-controller --generate-plots
+    restart: "no"  # Don't restart mininet automatically
+
+networks:
+  sagin-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+

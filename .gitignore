@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Generated files
+plots/*.png
+results/*.json
+topology/mininet_topology_data.json
+orchestrator/simulation_metrics.json
+matlab_export/*.asv
+
+# MATLAB
+*.asv
+*.autosave
+
+# Logs
+*.log
+*.out
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Docker
+.dockerignore
+
+# Temporary files
+*.tmp
+*.temp
