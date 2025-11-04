@@ -1,66 +1,13 @@
 # SAGIN Network Mininet/Ryu Implementation
 
-This project implements a demonstration of the COMOSAT (Controller Placement Optimization for Satellite Networks) algorithm using Mininet for network emulation and Ryu for SDN control.
+COMOSAT (Controller Placement Optimization for Satellite Networks) implementation using Mininet for network emulation and Ryu for SDN control. Demonstrates dynamic topology management and empirical validation of MATLAB cost models.
 
 ## Overview
 
-This implementation demonstrates:
 - Export of MATLAB simulation data to network emulation format
 - Dynamic SAGIN network topology with Mininet
 - Hierarchical SDN controller placement with Ryu
-- Empirical validation of MATLAB cost models
-- Generation of 6 journal-ready plots
-
-### Key Features
-
-- ✅ Dynamic topology management across time slots
-- ✅ Domain-based hierarchical control
-- ✅ Performance metrics collection
-- ✅ Automatic plot generation (6 journal plots)
-- ✅ Docker support for easy deployment
-
----
-
-## Architecture
-
-- **Satellites (LEO/MEO), HAPS, Ground Stations** → Mininet switches
-- **Single Ryu Controller** → Emulates hierarchical controller logic
-- **Links** → Mininet links with configurable delay/bandwidth
-- **Topology Changes** → Time-slotted updates via controller
-
-**Note**: Uses a single Ryu controller instance that logically manages multiple domains. The hierarchical structure (domain controllers + master controllers) from COMOSAT is emulated within this single controller.
-
-### Components
-
-- **MATLAB Export** (`matlab_export/`): Exports simulation data to JSON
-- **Mininet Topology** (`topology/`): Custom topology class for SAGIN networks
-- **Ryu Controller** (`controller/`): SDN controller application
-- **Orchestrator** (`orchestrator/`): Coordinates simulation across time slots
-- **Visualization** (`visualization/`): Generates 6 journal-ready plots
-
----
-
-## Prerequisites
-
-- **Python 3.8+** with packages: `mininet`, `ryu`, `matplotlib`, `numpy`, `networkx`, `psutil`
-- **MATLAB R2020b+** (for data export) with Aerospace and Mapping Toolboxes
-- **Docker 20.10+** and **Docker Compose 2.0+** (recommended)
-
----
-
-## Installation
-
-### Python Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### Docker (Recommended)
-
-No additional installation needed. Docker handles all dependencies.
-
----
+- Automatic generation of 6 journal-ready plots
 
 ## Quick Start
 
@@ -74,7 +21,7 @@ run_comosat_and_export(10)  % 10 time slots
 
 This generates `topology/mininet_topology_data.json`.
 
-### Step 2: Run with Docker
+### Step 2: Run with Docker (Recommended)
 
 ```powershell
 # Windows (PowerShell)
@@ -92,15 +39,34 @@ docker compose up
 
 After simulation completes:
 - **Metrics**: `results/simulation_metrics.json`
-- **Plots**: `plots/*.png` (6 journal plots generated automatically)
+- **Plots**: `plots/*.png` (6 plots generated automatically)
 
----
+## Architecture
+
+- **Satellites (LEO/MEO), HAPS, Ground Stations** → Mininet switches
+- **Single Ryu Controller** → Emulates hierarchical controller logic
+- **Time-slotted topology updates** via controller
+
+**Components**: MATLAB Export, Mininet Topology, Ryu Controller, Orchestrator, Visualization
+
+## Installation
+
+### Prerequisites
+
+- **Python 3.8+** with packages: `mininet`, `ryu`, `matplotlib`, `numpy`, `networkx`, `psutil`
+- **MATLAB R2020b+** (for data export) with Aerospace and Mapping Toolboxes
+- **Docker 20.10+** and **Docker Compose 2.0+** (recommended)
+
+### Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
 
 ## Execution Methods
 
 ### Method 1: Docker (Recommended)
 
-**Quick Start:**
 ```bash
 cd mininet_ryu_comosat
 docker compose up
@@ -120,8 +86,6 @@ docker compose logs -f        # View logs
 docker compose down           # Stop services
 ```
 
----
-
 ### Method 2: Single VM (Local)
 
 **Terminal 1: Start Ryu Controller**
@@ -136,36 +100,22 @@ cd mininet_ryu_comosat/orchestrator
 python3 orchestrator.py --slots 10 --duration 60
 ```
 
----
-
 ### Method 3: Separate VMs (Distributed)
 
-**VM Setup:**
+**Setup:**
 - Both VMs: VirtualBox → Network → Adapter 2: Internal Network (`sagin-network`)
-- **Ryu VM (IP: 192.168.199.3):**
-  ```bash
-  sudo nmcli device set enp0s8 managed no
-  sudo ifconfig enp0s8 192.168.199.3 netmask 255.255.255.0 up
-  ```
-
-- **Mininet VM:**
-  ```bash
-  sudo nmcli device set enp0s8 managed no
-  sudo ifconfig enp0s8 192.168.199.20 netmask 255.255.255.0 up
-  ping 192.168.199.3  # Test connectivity
-  ```
+- **Ryu VM (IP: 192.168.199.3):** `sudo ifconfig enp0s8 192.168.199.3 netmask 255.255.255.0 up`
+- **Mininet VM:** `sudo ifconfig enp0s8 192.168.199.20 netmask 255.255.255.0 up`
 
 **Execution:**
 - **Ryu VM:** `ryu-manager --verbose --ofp-listen-host 0.0.0.0 comosat_controller.py`
 - **Mininet VM:** `python3 orchestrator.py --slots 10 --remote-controller-ip 192.168.199.3`
 
----
-
 ## Visualization
 
 ### Automatic Generation (Docker)
 
-Plots are generated automatically after simulation completes when using Docker.
+Plots are generated automatically after simulation completes.
 
 ### Manual Generation
 
@@ -174,29 +124,16 @@ cd mininet_ryu_comosat/visualization
 python3 visualize_results.py --all --output ../plots/
 ```
 
-### Generated Plots (6 Journal Plots)
+### Generated Plots (6 Plots)
 
-1. **MATLAB vs. Mininet Comparison** (`matlab_vs_mininet_comparison.png`)
-   - Validates MATLAB cost model accuracy
+1. **MATLAB vs. Mininet Comparison** - Validates MATLAB cost model accuracy
+2. **Flow Setup Latency Breakdown** - Empirical breakdown of latency components
+3. **Remapping Statistics** - Controller remappings and domain evolution
+4. **CPU Load vs. Adaptation Events** - Resource usage correlation
+5. **Controller Evolution** - Topology evolution across 4 time slots
+6. **Queuing Delay vs. Arrival Rate** - Validates M/M/1 queuing model
 
-2. **Flow Setup Latency Breakdown** (`flow_setup_latency_breakdown.png`)
-   - Empirical breakdown of latency components
-
-3. **Remapping Statistics** (`remapping_statistics.png`)
-   - Controller remappings and domain evolution
-
-4. **CPU Load vs. Adaptation Events** (`controller_cpu_vs_adaptation.png`)
-   - Resource usage correlation with adaptation events
-
-5. **Controller Evolution** (`controller_evolution.png`)
-   - Topology evolution across 4 selected time slots
-
-6. **Queuing Delay vs. Arrival Rate** (`queuing_delay_vs_arrival_rate.png`)
-   - Validates M/M/1 queuing model assumption
-
-**Note**: Plots 1, 2, 4, and 6 require `emulation_metrics.json` for full functionality. See `visualization/EMULATION_PLOTS_GUIDE.md` for data collection instructions.
-
----
+**Note**: Plots 1, 2, 4, and 6 require `emulation_metrics.json`. See `visualization/EMULATION_PLOTS_GUIDE.md` for data collection.
 
 ## File Structure
 
@@ -206,7 +143,7 @@ mininet_ryu_comosat/
 ├── topology/               # Mininet topology builder
 ├── controller/             # Ryu SDN controller
 ├── orchestrator/           # Simulation orchestrator
-├── visualization/          # Plot generation (6 journal plots)
+├── visualization/          # Plot generation (6 plots)
 ├── experiments/            # Execution scripts
 ├── plots/                  # Generated plots (output)
 ├── results/                # Simulation metrics (output)
@@ -215,72 +152,43 @@ mininet_ryu_comosat/
 └── requirements.txt        # Python dependencies
 ```
 
----
-
 ## Troubleshooting
 
-### Common Issues
-
-**"Permission denied" (Linux)**
-- Solution: Run with `sudo` (e.g., `sudo python3 orchestrator.py`)
-
-**"Read-only file system" (Docker)**
-- Solution: Metrics are written to `results/` directory (writable volume)
-
-**"Topology file not found"**
-- Solution: Run MATLAB export script first
-
-**"Cannot reach Ryu VM" (Distributed)**
-- Solution: Check IP configuration and firewall (`sudo ufw allow 6633/tcp`)
-
-**"Container won't start" (Docker)**
-- Solution: Check logs: `docker compose logs`
-
----
+| Issue | Solution |
+|-------|----------|
+| "Permission denied" (Linux) | Run with `sudo` |
+| "Read-only file system" (Docker) | Metrics written to `results/` (writable) |
+| "Topology file not found" | Run MATLAB export script first |
+| "Cannot reach Ryu VM" | Check IP and firewall (`sudo ufw allow 6633/tcp`) |
+| "Container won't start" | Check logs: `docker compose logs` |
 
 ## Limitations
 
-This is a partial implementation for demonstration:
-
-1. Discrete time slots (not continuous movement)
-2. Link delays based on geometric distance only
-3. Limited scale: Maximum 60 nodes
-4. Pre-computed controller placements from MATLAB
-5. Single controller instance (hierarchical structure emulated)
-
----
+Partial implementation for demonstration:
+- Discrete time slots (not continuous movement)
+- Link delays based on geometric distance only
+- Limited scale: Maximum 60 nodes
+- Pre-computed controller placements from MATLAB
+- Single controller instance (hierarchical structure emulated)
 
 ## Output Files
 
-### Generated Plots (`plots/`)
-- 6 journal-ready plots (see [Visualization](#visualization) section)
+- **Plots** (`plots/`): 6 generated plots (see [Visualization](#visualization))
+- **Metrics** (`results/`): `simulation_metrics.json` with remappings, domains, statistics per slot
 
-### Metrics (`results/`)
-- `simulation_metrics.json`: Remappings, domains, network statistics per slot
-
----
-
-## Research Paper Usage
-
-For journal paper recommendations, see `JOURNAL_PLOT_RECOMMENDATIONS.md`.
-
-### Citation
+## Citation
 
 ```bibtex
 @software{sagin_mininet_ryu,
-  title={SAGIN Network Mininet/Ryu Implementation for COMOSAT},
-  author={Research Team},
+  title={SAGIN Network Mininet/Ryu Implementation for Controller Placement},
+  author={Ilora Maity},
   year={2024}
 }
 ```
 
----
-
 ## License
 
 [Specify your license here]
-
----
 
 ## Acknowledgments
 
