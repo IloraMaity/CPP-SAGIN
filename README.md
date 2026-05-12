@@ -7,7 +7,7 @@ COMOSAT (Controller Placement Optimization for Satellite Networks) implementatio
 - Export of MATLAB simulation data to network emulation format
 - Dynamic SAGIN network topology with Mininet
 - Hierarchical SDN controller placement with Ryu
-- Automatic generation of 6 journal-ready plots
+\
 
 ## Quick Start
 
